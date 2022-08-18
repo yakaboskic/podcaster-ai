@@ -11,3 +11,9 @@ class TestSpotifyData(unittest.TestCase):
         client = get_client()
         df = get_metadata(client)
         print(df)
+
+    def test_get_audiofile(self):
+        client = get_client()
+        fileids_map_path = 'data/spotify-fileids.json'
+        audio_filename = '009TPwk7i2wA7UA8QEjAo4.ogg'
+        print(get_file(client, audio_filename, fileids_map_path=fileids_map_path))

@@ -1,0 +1,3 @@
+[submodule "submodules/audio-seg-data-synth"]
+	path = submodules/audio-seg-data-synth
+	url = git@github.com:satvik-venkatesh/audio-seg-data-synth.git
