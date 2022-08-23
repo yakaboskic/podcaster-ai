@@ -30,6 +30,23 @@ def test_detection():
         ['python', '-u', '-m', 'unittest', 'tests/test_detection.py']
     )
 
+def test_segmentation():
+    """
+    Run all unittests. Equivalent to:
+    `poetry run python -u -m unittest tests/test_segmentation.py'
+    """
+    subprocess.run(
+        ['python', '-u', '-m', 'unittest', 'tests/test_segmentation.py']
+    )
+
+def test_pipelines():
+    """
+    Run all unittests. Equivalent to:
+    `poetry run python -u -m unittest tests/test_pipelines.py'
+    """
+    subprocess.run(
+        ['python', '-u', '-m', 'unittest', 'tests/test_pipelines.py']
+    )
 
 def fileids():
     """ Get a json file map of all filenames to box file ids.
