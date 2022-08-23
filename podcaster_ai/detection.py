@@ -132,7 +132,6 @@ def get_log_melspectrogram(audio, sr = 22050, hop_length = 220, n_fft = 1024, n_
             y=audio, sr=sr, hop_length=hop_length, n_fft=n_fft, n_mels=n_mels, fmin=fmin, fmax=fmax, dtype=np.float32)
     return librosa.core.power_to_db(bands, amin=1e-7)
 
-
 """
 Make predictions for full audio.
 """

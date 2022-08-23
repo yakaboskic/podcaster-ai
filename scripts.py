@@ -39,6 +39,15 @@ def test_segmentation():
         ['python', '-u', '-m', 'unittest', 'tests/test_segmentation.py']
     )
 
+def test_separation():
+    """
+    Run all unittests. Equivalent to:
+    `poetry run python -u -m unittest tests/test_separation.py'
+    """
+    subprocess.run(
+        ['python', '-u', '-m', 'unittest', 'tests/test_separation.py']
+    )
+
 def test_pipelines():
     """
     Run all unittests. Equivalent to:
