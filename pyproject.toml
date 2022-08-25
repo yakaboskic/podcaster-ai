@@ -18,6 +18,7 @@ pydub = "^0.25.1"
 demucs = "^3.0.5"
 compress-pickle = "^2.1.0"
 lz4 = "^4.0.2"
+matplotlib = "^3.5.3"
 
 [tool.poetry.dev-dependencies]
 
