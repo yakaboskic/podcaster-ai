@@ -71,9 +71,9 @@ def construct_datarow(x, y, sr, hop_size_seconds, window_size_seconds, num_rando
     y_mels = np.full((x_mels.shape[0], y.shape[0]), y)
     return x_mels, y_mels
 
-def transform_generator(dataset_path, sr=22050, window_size_seconds=10, y_scale=0.1, discrete=True, output_subset_indices=[0]):
+def transform_generator(dataset_path, sr=22050, window_size_seconds=10, y_scale=0.1, discrete=True, output_subset_indices=None):
     with open(dataset_path, 'rb') as data_file:
-        X, Y, _ = compress_pickle.load(data_file)
+        X, Y, y_cols = compress_pickle.load(data_file)
     for x, y in zip(X, Y):
         x_mel = transform_sample(x, sr, window_size_seconds=window_size_seconds, num_random_hops=1)
         x_mel = np.squeeze(x_mel, 0)#.T
@@ -84,6 +84,9 @@ def transform_generator(dataset_path, sr=22050, window_size_seconds=10, y_scale=
             y = y.astype('int32')
         if output_subset_indices:
             y = y[output_subset_indices]
+            y_cols = [y_cols[i] for i in output_subset_indices]
+        # Build output dict
+        y = {output: _y for output, _y in zip(y_cols, y)}
         yield x_mel.astype('float32'), y
 
 def construct_dataset(dataset_path, sr, hop_size_seconds=None, window_size_seconds=None, num_random_hops=None, batch_size=128):
@@ -107,7 +110,7 @@ def train_jku_emotions_model(
         epsilon=1.0,
         batch_size=8,
         epochs=50,
-        output_subset_indices=[0],
+        output_subset_indices=None,
         discrete=True,
         class_labels=['Low', 'Medium', 'High'],
         sr=22050,
@@ -134,6 +137,57 @@ def train_jku_emotions_model(
         model = compile_jku_emotions_model_discrete(model, keras.optimizers.Adam, y_cols, learning_rate, epsilon)
     else:
         model = compile_jku_emotions_model_continuous(model, keras.optimizers.Adam, y_cols, learning_rate, epsilon)
+    print(y_cols)
+    print(y)
+    # Construct tf dataset
+    dataset = tf.data.Dataset.from_generator(
+            transform_generator,
+            args=[dataset_path], 
+            output_signature=(
+                tf.TensorSpec(shape=x.shape, dtype=tf.float32),
+                {output: tf.TensorSpec(shape=(), dtype=tf.float32) for output in y_cols},
+                )
+            ).shuffle(50).batch(batch_size)
+    # Fit
+    history = model.fit(
+        x=dataset,
+        epochs=epochs,
+        )
+    return model, history
+
+def train_fc_emotions_model(
+        dataset_path,
+        learning_rate=0.0005,
+        epsilon=1.0,
+        batch_size=8,
+        epochs=50,
+        output_subset_indices=None,
+        discrete=True,
+        class_labels=['Low', 'Medium', 'High'],
+        sr=22050,
+        window_size_seconds=10,
+        y_scale=0.1,
+        ):
+    print('Loading dataset and dataset shapes for model construction.')
+    # Load pre-built dataset to get column names
+    with open(dataset_path, 'rb') as data_file:
+        X, _, y_cols = compress_pickle.load(data_file)
+    if output_subset_indices:
+        y_cols = [y_cols[i] for i in output_subset_indices]
+    # Build generator to get necessary shapes
+    for x, y in transform_generator(dataset_path, sr, window_size_seconds, y_scale, discrete, output_subset_indices):
+        break
+    print('Constructing model.')
+    # Build model
+    if discrete:
+        model = construct_fc_model_discrete(x.shape, y_cols, class_labels=class_labels)
+    else:
+        model = construct_fc_model_continuous(x.shape, y_cols)
+    # Compile model
+    if discrete:
+        model = compile_jku_emotions_model_discrete(model, keras.optimizers.Adam, y_cols, learning_rate, epsilon)
+    else:
+        model = compile_jku_emotions_model_continuous(model, keras.optimizers.Adam, y_cols, learning_rate, epsilon)
     # Construct tf dataset
     dataset = tf.data.Dataset.from_generator(
             transform_generator,
@@ -149,6 +203,7 @@ def train_jku_emotions_model(
         epochs=epochs,
         )
     return model, history
+
 
 def compile_jku_emotions_model_continuous(model, optimizer, output_columns, learning_rate=0.0005, epsilon=1.0):
     # Build list of mean square error losses
@@ -167,9 +222,10 @@ def compile_jku_emotions_model_continuous(model, optimizer, output_columns, lear
 
 def compile_jku_emotions_model_discrete(model, optimizer, output_columns, learning_rate=0.0005, epsilon=1.0):
     # Build list of mean square error losses
-    losses = []
-    for _ in output_columns:
-        losses.append(keras.losses.SparseCategoricalCrossentropy(from_logits=True))
+    losses = {}
+    for output in output_columns:
+        losses[output] = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        #losses.append(keras.losses.SparseCategoricalCrossentropy(from_logits=True))
     # Compile
     model.compile(
             optimizer=optimizer(
@@ -177,13 +233,41 @@ def compile_jku_emotions_model_discrete(model, optimizer, output_columns, learni
                 epsilon=epsilon,
                 ),
             loss=losses,
-            metrics=['accuracy'],
+            #metrics=['accuracy'],
             )
     return model
 
 def construct_jku_emotions_model_continuous(input_shape, output_columns):
+    # Input Layer
+    inputs = keras.Input(shape=input_shape, name="mel_inputs")
+    # Construct base model and outputs
+    outputs = []
+    for output in output_columns:
+        x = construct_jku_base_model(inputs)
+        outputs.append(layers.Dense(1, name=output)(x))
+    model = keras.Model(
+            inputs=inputs,
+            outputs=outputs,
+            )
+    return model
+
+def construct_jku_emotions_model_discrete(input_shape, output_columns, class_labels):
+    # Input Layer
+    inputs = keras.Input(shape=input_shape, name="mel_inputs")
+    # Construct base model and outputs
+    outputs = []
+    for output in output_columns:
+        x = construct_jku_base_model(inputs)
+        outputs.append(layers.Dense(len(class_labels), name=output)(x))
+    model = keras.Model(
+            inputs=inputs,
+            outputs=outputs,
+            )
+    return model
+
+def construct_fc_model_continuous(input_shape, output_columns):
     # Construct base model
-    inputs, x = construct_jku_base_model(input_shape)
+    inputs, x = construct_fc_base_model(input_shape)
     # Define outputs
     outputs = []
     for out_name in output_columns:
@@ -196,9 +280,9 @@ def construct_jku_emotions_model_continuous(input_shape, output_columns):
             )
     return model
 
-def construct_jku_emotions_model_discrete(input_shape, output_columns, class_labels):
+def construct_fc_model_discrete(input_shape, output_columns, class_labels):
     # Construct base model
-    inputs, x = construct_jku_base_model(input_shape)
+    inputs, x = construct_fc_base_model(input_shape)
     # Define outputs
     outputs = []
     for out_name in output_columns:
@@ -211,9 +295,30 @@ def construct_jku_emotions_model_discrete(input_shape, output_columns, class_lab
             )
     return model
 
-def construct_jku_base_model(input_shape):
+def construct_fc_base_model(input_shape):
     # Input Layer
     inputs = keras.Input(shape=input_shape, name="mel_inputs")
+    # Flatten
+    x = layers.Flatten()(inputs)
+    # FC layers
+    x = layers.Dense(512, activation='relu')(x)
+    x = layers.Dropout(0.2)(x)
+
+    x = layers.Dense(256, activation='relu')(x)
+    x = layers.Dropout(0.2)(x)
+
+    x = layers.Dense(128, activation='relu')(x)
+    x = layers.Dropout(0.2)(x)
+
+    x = layers.Dense(64, activation='relu')(x)
+    x = layers.Dropout(0.2)(x)
+
+    x = layers.Dense(32, activation='relu')(x)
+    x = layers.Dropout(0.2)(x)
+
+    return inputs, x
+
+def construct_jku_base_model(inputs):
     # First Convolution
     x = layers.Conv2D(
             filters=64,
@@ -319,4 +424,4 @@ def construct_jku_base_model(input_shape):
             )(x)
     # Flatten
     x = layers.Flatten()(x)
-    return inputs, x
+    return x

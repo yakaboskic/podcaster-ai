@@ -154,7 +154,7 @@ def mk_preds_fa(audio_path, model, hop_size = 6.0, discard = 1.0, win_length = 8
         in_signal = np.copy(pad_signal)
 
     audio_clip_length_samples = in_signal.shape[0]
-    print('audio_clip_length_samples is {}'.format(audio_clip_length_samples))
+    #print('audio_clip_length_samples is {}'.format(audio_clip_length_samples))
 
     hop_size_samples = 220 * 602 - 1
 
@@ -182,7 +182,7 @@ def mk_preds_fa(audio_path, model, hop_size = 6.0, discard = 1.0, win_length = 8
             mss = get_log_melspectrogram(seg)
             M = mss.T
             mss_batch[j, :, :] = M
-        preds[i * batch_size:(i + 1) * batch_size, :, :] = (model.predict(mss_batch) >= (0.5, 0.5)).astype(np.float)
+        preds[i * batch_size:(i + 1) * batch_size, :, :] = (model.predict(mss_batch, verbose=0) >= (0.5, 0.5)).astype(np.float)
 
     if n_batch * batch_size < n_preds:
         i = n_batch
@@ -194,7 +194,7 @@ def mk_preds_fa(audio_path, model, hop_size = 6.0, discard = 1.0, win_length = 8
         M = mss.T
         mss_batch[j, :, :] = M
 
-    preds[i * batch_size:n_preds, :, :] = (model.predict(mss_batch) >= (0.5, 0.5)).astype(float)
+    preds[i * batch_size:n_preds, :, :] = (model.predict(mss_batch, verbose=0) >= (0.5, 0.5)).astype(float)
 
     preds_mid = np.copy(preds[1:-1, 100:702, :])
 

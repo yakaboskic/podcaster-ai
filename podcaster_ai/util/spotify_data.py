@@ -104,6 +104,10 @@ def get_file(client, box_filename, fileids_map=None, fileids_map_path=None, save
         with open(fileids_map_path, 'r') as f_:
             fileids_map = json.load(f_)
     save_path = os.path.join(save_dir, box_filename)
-    with open(save_path, 'wb') as f_:
-        client.file(fileids_map[box_filename]).download_to(f_)
+    try:
+        with open(save_path, 'wb') as f_:
+            client.file(fileids_map[box_filename]).download_to(f_)
+    except:
+        print(f'Could not download file: {box_filename}.')
+        return None
     return save_path
