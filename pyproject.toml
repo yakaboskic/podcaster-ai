@@ -19,6 +19,7 @@ demucs = "^3.0.5"
 compress-pickle = "^2.1.0"
 lz4 = "^4.0.2"
 matplotlib = "^3.5.3"
+ray = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 
