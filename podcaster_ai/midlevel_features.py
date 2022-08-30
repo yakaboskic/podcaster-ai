@@ -10,6 +10,69 @@ from tensorflow.keras import layers, activations
 from collections import defaultdict
 
 
+def predict_midlevel_from_audiofiles(files, model_path, logger=None):
+    """ Will predict mid level features from audio files given a 10 second window and
+    average predictions together.
+    """
+    # Load model
+    model = tf.keras.models.load_model(model_path)
+    # Add softmax output
+    softmaxes = []
+    for output in model.outputs:
+        softmaxes.append(layers.Softmax()(output))
+    softmax_model = keras.Model(
+            inputs=model.inputs,
+            outputs=softmaxes,
+            )
+    preds = []
+    for i, f in enumerate(files):
+        preds.append(predict_midlevel_features(f, softmax_model))
+        if logger:
+            logger.report(i=i, total=len(files))
+    return preds
+
+def predict_midlevel_features(f, model):
+    # Load in file
+    in_signal, sr = librosa.load(f, sr=22050)
+    # Predict on each 10 second window
+    duration = librosa.get_duration(y=in_signal, sr=sr)
+    num_windows = int(np.ceil(duration / 10))
+    X = []
+    for i in range(num_windows):
+        start_time = i * 10
+        start_index = start_time * sr
+        end_time = (i+1) * 10
+        end_index = end_time * sr
+        if end_time > duration:
+            seg = in_signal[start_index:]
+            pad = (10 * sr) - seg.shape[0]
+            seg = np.concatenate((seg, np.zeros(pad)))
+        else:
+            seg = in_signal[start_index:end_index]
+        # Normalize
+        hop = librosa.util.normalize(seg)
+        # Get melspectrogram
+        mel = get_melspectrograms([hop], sr)
+        # Expand channel dims
+        mel = np.expand_dims(mel, -1)
+        # Append to X
+        X.append(np.squeeze(mel, 0))
+    X = np.array(X)
+    # Predict
+    preds = model.predict(X, verbose=0)
+    # Post process prediction result
+    return postprocess_predictions(preds)
+
+def postprocess_predictions(preds):
+    categ_preds = []
+    for p in preds:
+        categ_preds.append(
+                np.average(
+                    np.argmax(p, axis=1)
+                    )
+                )
+    return categ_preds
+        
 def hopify(in_signal, sr, hop_size_seconds, window_size_seconds):
     """ Will hopify based on hop size and window size. For instance if a audio clip is
     8 seconds and the hop and window size is 2 and 3 respectively, then the start and end pos

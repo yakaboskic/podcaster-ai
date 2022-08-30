@@ -91,6 +91,7 @@ class DetectAndSegmentPipeline:
                 return segmentation_dict, below_threshold, detection_problems, segmentation_problems
         else:
             audio_file = audio_filename
+            audio_filename = os.path.basename(audio_file)
         try:
             res = detect(model, audio_file)
         except:
