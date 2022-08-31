@@ -20,6 +20,10 @@ compress-pickle = "^2.1.0"
 lz4 = "^4.0.2"
 matplotlib = "^3.5.3"
 ray = "^2.0.0"
+pydot = "^1.4.2"
+seaborn = "^0.11.2"
+pybkb = { path = "../../modules/PyBKB/", develop = true }
+pygobnilp = { git = "https://yakaboskic@bitbucket.org/yakaboskic/pygobnilp.git" }
 
 [tool.poetry.dev-dependencies]
 
@@ -41,3 +45,4 @@ download_gimlet = 'scripts:download_gimlet'
 gimlet_topics = 'scripts:gimlet_topics'
 separate_gimlet = 'scripts:separate_gimlet'
 predict_gimlet_midlevel = 'scripts:predict_gimlet_midlevel'
+bkbsl = 'scripts:bkbsl'

@@ -477,7 +477,7 @@ def predict_gimlet_midlevel():
 
 def gimlet_topics():
     from podcaster_ai.topic import find_topics
-    metadata = pd.read_csv('/home/cyakaboski/data/metadata.tsv', delimiter='\t')
+    metadata = pd.read_csv('/mnt/c/Users/c_yak/Downloads/metadata.tsv', delimiter='\t')
     unique_desc = list(metadata.show_description.unique().astype('U'))
     unique_desc_df = pd.DataFrame(unique_desc, columns=['show_description'])
     print(unique_desc_df)
@@ -489,3 +489,15 @@ def gimlet_topics():
     print(unique_desc_df[unique_desc_df.show_description.isin(gimlet_desc)])
     #print(ass)
     print(words)
+
+def bkbsl():
+    from pybkb.learn import BKBLearner
+    # Load dataset
+    with open('gimlet_midlevel_topic_bkb-data.lz4', 'rb') as f_:
+        data, feature_states, srcs = compress_pickle.load(f_)
+    # Intialize learner
+    learner = BKBLearner('gobnilp', 'mdl_ent', palim=3)
+    # Fit
+    learner.fit(data, feature_states, srcs)
+    print(leaner.report.json())
+
