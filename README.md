@@ -3,6 +3,14 @@ First, clone the podcaster ai repository to a directory of your choosing using a
 ```bash
 git clone git@github.com:yakaboskic/podcaster-ai.git
 ```
+### Requirements
+Ensure that at least Python 3.11 is installed and if you are using Ubuntu or another Linux distro ensure that all the dev libraries are installed with Python 3.11 as well. You may wish to run a command such as:
+
+```bash
+sudo apt install python3.11 python3.11-dev
+```
+If you want to install a different version of Python than that which is default on your system, this [link](https://www.howtogeek.com/install-latest-python-version-on-ubuntu/) may be helpful.
+
 ### Download Data Files
 There are a number of necessary data files required to run Podcaster AI. They are various model files as well as data files that I prefer not to package in the github repo for faster cloning speeds. These data files are hosted at Zenodo at the following [link](https://zenodo.org/records/10460039). 
 
