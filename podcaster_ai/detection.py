@@ -129,7 +129,7 @@ def frames_to_time(f, sr = 22050.0, hop_size = 220):
 def get_log_melspectrogram(audio, sr = 22050, hop_length = 220, n_fft = 1024, n_mels = 80, fmin = 64, fmax = 8000):
     """Return the log-scaled Mel bands of an audio signal."""
     bands = librosa.feature.melspectrogram(
-            y=audio, sr=sr, hop_length=hop_length, n_fft=n_fft, n_mels=n_mels, fmin=fmin, fmax=fmax, dtype=np.float32)
+            y=audio, sr=sr, hop_length=hop_length, n_fft=n_fft, n_mels=n_mels, fmin=fmin, fmax=fmax, dtype=float)
     return librosa.core.power_to_db(bands, amin=1e-7)
 
 """
@@ -182,7 +182,7 @@ def mk_preds_fa(audio_path, model, hop_size = 6.0, discard = 1.0, win_length = 8
             mss = get_log_melspectrogram(seg)
             M = mss.T
             mss_batch[j, :, :] = M
-        preds[i * batch_size:(i + 1) * batch_size, :, :] = (model.predict(mss_batch, verbose=0) >= (0.5, 0.5)).astype(np.float)
+        preds[i * batch_size:(i + 1) * batch_size, :, :] = (model.predict(mss_batch, verbose=0) >= (0.5, 0.5)).astype(float)
 
     if n_batch * batch_size < n_preds:
         i = n_batch
@@ -251,7 +251,7 @@ def construct_model():
     return model
 
 
-def load_detection_model(path_to_model_weights='models/model_d-DS.h5'):
+def load_detection_model(path_to_model_weights='data/model_d-DS.h5'):
     model = construct_model()
     model.load_weights(path_to_model_weights)   
     return model
@@ -264,8 +264,17 @@ def convert_preds_to_dict(preds):
     return dict(res)
 
 def detect(model, path_to_audio, path_to_results=None):
-    ss, _ = sf.read(path_to_audio)
-    oop = mk_preds_fa(path_to_audio, model)
+    # If mp3, convert to wav via a temp file
+    if path_to_audio.endswith('.mp3'):
+        import tempfile
+        from pydub import AudioSegment
+        with tempfile.NamedTemporaryFile(suffix='.wav') as fp:
+            AudioSegment.from_mp3(path_to_audio).export(fp.name, format='wav')
+            ss, _ = sf.read(fp.name)
+            oop = mk_preds_fa(fp.name, model)
+    else:
+        ss, _ = sf.read(path_to_audio)
+        oop = mk_preds_fa(path_to_audio, model)
 
     p_smooth = smooth_output(oop.T, min_speech=1.3, min_music=3.4, max_silence_speech=0.4, max_silence_music=0.6)
     #p_smooth = p_smooth.T

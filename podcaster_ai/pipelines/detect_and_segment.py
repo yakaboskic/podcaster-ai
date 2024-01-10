@@ -18,7 +18,7 @@ class DetectAndSegmentPipeline:
             total_music_threshold_seconds:int=30,
             segment_music_threshold_seconds:int=5,
             output_dir:str=None,
-            path_to_detection_model_weights:str='models/model_d-DS.h5',
+            path_to_detection_model_weights:str='data/model_d-DS.h5',
             fileids_map_path = 'data/spotify-fileids.json',
             ):
         self.files = files
@@ -160,8 +160,8 @@ def detect_and_segment_distributed(
             total_music_threshold_seconds:int=30,
             segment_music_threshold_seconds:int=5,
             output_dir:str=None,
-            path_to_detection_model_weights:str='/home/cyakaboski/src/python/projects/podcaster-ai/models/model_d-DS.h5',
-            fileids_map_path = '/home/cyakaboski/src/python/projects/podcaster-ai/data/spotify-fileids.json',
+            path_to_detection_model_weights:str='data/model_d-DS.h5',
+            fileids_map_path = 'data/spotify-fileids.json',
             position=0,
             ):
     # Build pipeline

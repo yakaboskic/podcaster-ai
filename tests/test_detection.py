@@ -35,7 +35,7 @@ class TestDetection(unittest.TestCase):
         preds = detect(self.model, path_to_audio)
         self.assertDictEqual(preds, truth)
 
-    def test_009TPwk7i2wA7UA8QEjAo4(self):
-        path_to_audio = '/tmp/009TPwk7i2wA7UA8QEjAo4.ogg'
+    def test_this_american_life(self):
+        path_to_audio = 'data/this_american_life-241-20_acts_in_60_minutes-quarter.mp3'
         preds = detect(self.model, path_to_audio)
         print(preds)
